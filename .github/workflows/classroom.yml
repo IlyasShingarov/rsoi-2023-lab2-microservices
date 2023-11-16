@@ -30,7 +30,7 @@ jobs:
       - name: Build CarService API
         run: |
           chmod +x ./CarService/gradlew
-          ./CarService/gradlew :CarServiceApi:clean :CarServiceApi:publishToMavenLocal
+          cd CarService && ./CarService/gradlew :CarServiceApi:clean :CarServiceApi:publishToMavenLocal
 
 
       - uses: docker/setup-buildx-action@v2
