@@ -42,35 +42,35 @@ jobs:
           chmod +x ./PaymentService/gradlew
           cd PaymentService && ./gradlew :PaymentServiceApi:clean :PaymentServiceApi:publishToMavenLocal :PaymentServiceImpl:clean :PaymentServiceImpl:bootJar
 
+      - name: Build GatewayService
+        run: |
+          chmod +x ./GatewayService/gradlew
+          cd GatewayService && ./gradlew :GatewayImpl:clean :GatewayImpl:bootJar
 
-      - uses: docker/setup-buildx-action@v2
+      - name: Build images
+        timeout-minutes: 10
+        run: docker compose build
 
-      # TODO build and run unit tests
+      - name: Run containers
+        timeout-minutes: 5
+        run: |
+          docker compose up -d
+          ./scripts/wait-script.sh
+        env:
+          WAIT_PORTS: 8080,8070,8060,8050
 
-      # - name: Build images
-      #   timeout-minutes: 10
-      #   run: docker compose build
+      - name: Run API Tests
+        uses: matt-ball/newman-action@master
+        with:
+          # TODO insert your variant
+          collection: <variant>/postman/collection.json
+          environment: <variant>/postman/environment.json
+          delayRequest: 100
+          reporters: '[ "cli" ]'
 
-      # - name: Run containers
-      #   timeout-minutes: 5
-      #   run: |
-      #     docker compose up -d
-      #     ./scripts/wait-script.sh
-      #   env:
-      #     WAIT_PORTS: 8080,8070,8060,8050
-
-      # - name: Run API Tests
-      #   uses: matt-ball/newman-action@master
-      #   with:
-      #     # TODO insert your variant
-      #     collection: <variant>/postman/collection.json
-      #     environment: <variant>/postman/environment.json
-      #     delayRequest: 100
-      #     reporters: '[ "cli" ]'
-
-      # - uses: education/autograding@v1
-      #   id: autograder
-      #   continue-on-error: true
+      - uses: education/autograding@v1
+        id: autograder
+        continue-on-error: true
 
       # - name: Github auto grader mark
       #   uses: Romanow/google-sheet-autograder-marker@v1.0
@@ -82,7 +82,7 @@ jobs:
       #     column_offset: 'F'
       #     mark: "'+"
 
-      # - name: Stop containers
-      #   if: always()
-      #   continue-on-error: true
-      #   run: docker compose down -v
+      - name: Stop containers
+        if: always()
+        continue-on-error: true
+        run: docker compose down -v
