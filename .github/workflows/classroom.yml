@@ -27,7 +27,6 @@ jobs:
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
         
-      - name: Build with Gradle
       - name: Build CarService API
         run: ./CarService/gradlew :CarServiceApi:clean :CarServiceApi:publishToMavenLocal
 
