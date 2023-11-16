@@ -59,6 +59,11 @@ jobs:
         env:
           WAIT_PORTS: 8080,8070,8060,8050
 
+      - name: Sleep for 30 seconds
+        uses: jakejarvis/wait-action@master
+        with:
+          time: '50s'
+
       - name: Run API Tests
         uses: matt-ball/newman-action@master
         with:
