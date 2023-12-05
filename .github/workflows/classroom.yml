@@ -14,45 +14,78 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'oracle'
+          cache: 'gradle'
 
-      - uses: docker/setup-buildx-action@v2
+      - name: Validate Gradle wrapper
+        uses: gradle/wrapper-validation-action@ccb4328a959376b642e027874838f60f8e596de3
 
-      # TODO build and run unit tests
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+        
+      - name: Build CarService & API
+        run: |
+          chmod +x ./CarService/gradlew
+          cd CarService && ./gradlew :CarServiceApi:clean :CarServiceApi:publishToMavenLocal :CarServiceImpl:clean :CarServiceImpl:bootJar
+      
+      - name: Build RentalService & API
+        run: |
+          chmod +x ./RentalService/gradlew
+          cd RentalService && ./gradlew :RentalServiceApi:clean :RentalServiceApi:publishToMavenLocal :RentalServiceImpl:clean :RentalServiceImpl:bootJar
+
+      - name: Build PaymentService & API
+        run: |
+          chmod +x ./PaymentService/gradlew
+          cd PaymentService && ./gradlew :PaymentServiceApi:clean :PaymentServiceApi:publishToMavenLocal :PaymentServiceImpl:clean :PaymentServiceImpl:bootJar
+
+      - name: Build GatewayService
+        run: |
+          chmod +x ./GatewayService/gradlew
+          cd GatewayService && ./gradlew :GatewayImpl:clean :GatewayImpl:bootJar
 
       - name: Build images
         timeout-minutes: 10
         run: docker compose build
 
+          # ./scripts/wait-script.sh
       - name: Run containers
-        timeout-minutes: 5
+        timeout-minutes: 10
         run: |
           docker compose up -d
-          ./scripts/wait-script.sh
         env:
           WAIT_PORTS: 8080,8070,8060,8050
+
+      - name: Sleep for 30 seconds
+        uses: jakejarvis/wait-action@master
+        with:
+          time: '50s'
 
       - name: Run API Tests
         uses: matt-ball/newman-action@master
         with:
           # TODO insert your variant
-          collection: <variant>/postman/collection.json
-          environment: <variant>/postman/environment.json
+          collection: v3/postman/collection.json
+          environment: v3/postman/environment.json
           delayRequest: 100
           reporters: '[ "cli" ]'
 
-      - uses: education/autograding@v1
-        id: autograder
-        continue-on-error: true
+      # - uses: education/autograding@v1
+      #   id: autograder
+      #   continue-on-error: true
 
-      - name: Github auto grader mark
-        uses: Romanow/google-sheet-autograder-marker@v1.0
-        with:
-          google_token: ${{secrets.GOOGLE_API_KEY}}
-          sheet_id: "1xkgjUX6Qmk7rdJG-QPOToav-HWWtthJjnShIKnw3oIY"
-          homework_number: 2
-          user_column: 'D'
-          column_offset: 'F'
-          mark: "'+"
+      # - name: Github auto grader mark
+      #   uses: Romanow/google-sheet-autograder-marker@v1.0
+      #   with:
+      #     google_token: ${{secrets.GOOGLE_API_KEY}}
+      #     sheet_id: "1xkgjUX6Qmk7rdJG-QPOToav-HWWtthJjnShIKnw3oIY"
+      #     homework_number: 2
+      #     user_column: 'D'
+      #     column_offset: 'F'
+      #     mark: "'+"
 
       - name: Stop containers
         if: always()
